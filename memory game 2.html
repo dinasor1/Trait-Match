@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trait Match</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            background: radial-gradient(1200px circle at 20% 10%, #0ea5e9 0%, rgba(14, 165, 233, 0.12) 35%, transparent 60%),
+                        radial-gradient(1000px circle at 80% 70%, #14b8a6 0%, rgba(20, 184, 166, 0.10) 40%, transparent 70%),
+                        linear-gradient(135deg, #070b1a 0%, #081b2f 45%, #04121f 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.92);
+            padding: 25px;
+            border-radius: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 0 rgba(15, 118, 110, 0.55);
+            border: 5px solid rgba(255, 255, 255, 0.95);
+        }
+
+        h1 {
+            color: #0b2a4a;
+            font-size: 2.5em;  
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 20px;
+            box-shadow: 0 6px 0 rgba(15, 118, 110, 0.75);
+            border: 4px solid #fff;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .game-board.hard-mode {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .card {
+            background: transparent;
+            aspect-ratio: 1;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+
+        .card:hover {
+            transform: scale(1.08);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.flipped:hover {
+            transform: rotateY(180deg) scale(1.08);
+        }
+
+        .card.matched {
+            pointer-events: none;
+        }
+
+        .card-front,
+        .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-front {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 249, 255, 0.98) 60%, rgba(236, 254, 255, 0.96) 100%);
+            color: #0ea5e9;
+            font-size: 3.5em;
+            box-shadow: 0 6px 0 rgba(15, 118, 110, 0.55);
+            border: 5px solid #0ea5e9;
+        }
+
+        .card-back {
+            background: rgba(255, 255, 255, 0.96);
+            transform: rotateY(180deg);
+            overflow: hidden;
+            box-shadow: 0 6px 0 rgba(15, 118, 110, 0.55);
+            border: 5px solid #14b8a6;
+        }
+
+        .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .genetic-card {
+            background: white;
+            display: flex !important;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .genetic-card img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .genetic-card.eye-card {
+            padding: 10px;
+            justify-content: flex-start;
+            padding-left: 5px;
+        }
+
+        .genetic-card.eye-card img {
+            max-width: 110%;
+            max-height: 110%;
+            object-fit: contain;
+            object-position: left center;
+        }
+
+        .genetic-card.flower-card {
+            padding: 0;
+            background: white;
+        }
+
+        .genetic-card.flower-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .genetic-content {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            line-height: 1.3;
+            padding: 10px;
+            color: inherit;
+        }
+
+        .genetic-content i {
+            font-size: 1.5em;
+            margin-right: 5px;
+        }
+
+        .controls {
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%);
+            color: #fff;
+            border: 5px solid #fff;
+            padding: 15px 40px;
+            border-radius: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(15, 118, 110, 0.85);
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 9px 0 rgba(15, 118, 110, 0.85);
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 rgba(15, 118, 110, 0.85);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 12px 0 rgba(15, 118, 110, 0.60);
+            border: 6px solid #7c3aed;
+            animation: bounce 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .modal-content h2 {
+            color: #7c3aed;
+            font-size: 2.8em;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            color: #0ea5e9;
+            font-size: 1.4em;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+            color: #fff;
+            border: 5px solid #fff;
+            padding: 15px 40px;
+            border-radius: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0 rgba(91, 33, 182, 0.85);
+            transition: all 0.2s;
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 9px 0 rgba(91, 33, 182, 0.85);
+        }
+
+        .difficulty-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 rgba(91, 33, 182, 0.85);
+        }
+
+        .menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(1200px circle at 20% 10%, rgba(14, 165, 233, 0.35) 0%, transparent 55%),
+                        radial-gradient(1000px circle at 80% 70%, rgba(20, 184, 166, 0.30) 0%, transparent 60%),
+                        linear-gradient(135deg, #070b1a 0%, #081b2f 45%, #04121f 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .menu.hidden {
+            display: none;
+        }
+
+        .menu-content {
+            background: #fff;
+            padding: 80px 60px;
+            border-radius: 40px;
+            text-align: center;
+            box-shadow: 0 15px 0 rgba(15, 118, 110, 0.60);
+            border: 8px solid #7c3aed;
+            width: 80%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: bounce 0.6s;
+        }
+
+        .menu-content h1 {
+            color: #0b2a4a;
+            font-size: 4.5em;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: nowrap;
+        }
+
+        .menu-content .subtitle {
+            color: #0ea5e9;
+            font-size: 2em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .menu-content .instructions {
+            color: #666;
+            font-size: 1.4em;
+            margin-bottom: 60px;
+            line-height: 1.8;
+            max-width: 600px;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-direction: row;
+        }
+
+        .menu-difficulty-btn {
+            background: linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%);
+            color: #fff;
+            border: 5px solid #fff;
+            padding: 25px 60px;
+            border-radius: 25px;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 8px 0 rgba(15, 118, 110, 0.85);
+            transition: all 0.2s;
+            width: auto;
+        }
+
+        .menu-difficulty-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 0 rgba(15, 118, 110, 0.85);
+        }
+
+        .menu-difficulty-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 4px 0 rgba(15, 118, 110, 0.85);
+        }
+
+        .menu-difficulty-btn.hard {
+            background: linear-gradient(135deg, #be123c 0%, #7f1d1d 100%);
+            box-shadow: 0 8px 0 rgba(127, 29, 29, 0.85);
+        }
+
+        .menu-difficulty-btn.hard:hover {
+            box-shadow: 0 12px 0 rgba(127, 29, 29, 0.85);
+        }
+
+        .menu-difficulty-btn.hard:active {
+            box-shadow: 0 4px 0 rgba(127, 29, 29, 0.85);
+        }
+
+        .match-notification-content {
+            border: 8px solid #14b8a6;
+            padding: 60px 40px;
+        }
+
+        .match-notification-content h2 {
+            color: #14b8a6;
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .match-notification-content i {
+            font-size: 4em;
+            color: #14b8a6;
+        }
+
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+
+            .menu-content {
+                padding: 40px 30px;
+                border-radius: 30px;
+            }
+
+            .menu-content h1 {
+                font-size: 2.3em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-board {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            h1 {
+                font-size: 1.6em;
+            }
+            
+            .card-front {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="menu" id="menuScreen">
+        <div class="menu-content">
+            <h1><i class="fas fa-heart"></i> Trait Match <i class="fas fa-heart"></i></h1>
+            <p class="subtitle">Memory Card Game</p>
+            <p class="instructions">Match all the cards by finding pairs! Choose your difficulty and test your memory skills.</p>
+            <div class="menu-buttons">
+                <button class="menu-difficulty-btn" onclick="selectDifficulty('easy')">
+                    <i class="fas fa-star"></i> Easy Mode (10 Hearts)
+                </button>
+                <button class="menu-difficulty-btn hard" onclick="selectDifficulty('hard')">
+                    <i class="fas fa-bolt"></i> Hard Mode (10 Hearts)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-star"></i> Trait Match <i class="fas fa-star"></i></h1>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Hearts</div>
+                    <div class="stat-value" id="hearts"><i class="fas fa-heart"></i> 5</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Matches</div>
+                    <div class="stat-value" id="matches">0/8</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="controls">
+            <button class="btn" onclick="newGame()">
+                <i class="fas fa-redo"></i> New Game
+            </button>
+        </div>
+    </div>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content" style="animation: bounce 0.5s, pulse 0.5s 0.5s;">
+            <h2 id="winTitle" style="font-size: 3em; margin-bottom: 20px;"><i class="fas fa-trophy"></i> YOU WIN! <i class="fas fa-trophy"></i></h2>
+            <div id="winStats" style="margin-bottom: 30px;">
+                <p style="font-size: 1.3em; margin: 10px 0;"><i class="fas fa-heart" style="color: #e11d48;"></i> Hearts Remaining: <span id="finalHearts" style="font-weight: bold; color: #14b8a6;"></span></p>
+                <p id="winMessage" style="font-size: 1.2em; margin: 10px 0; color: #7c3aed; font-weight: bold;"></p>
+            </div>
+            <button class="btn" onclick="newGame()" style="font-size: 1.2em; padding: 15px 40px;">Play Again 🎮</button>
+        </div>
+    </div>
+
+    <div class="modal" id="loseModal">
+        <div class="modal-content">
+            <h2><i class="fas fa-frown"></i> Game Over! <i class="fas fa-frown"></i></h2>
+            <p>You ran out of hearts!</p>
+            <button class="btn" onclick="newGame()">Try Again</button>
+        </div>
+    </div>
+
+    <div class="modal" id="instructionsModal">
+        <div class="modal-content">
+            <h2><i class="fas fa-book"></i> How to Play <i class="fas fa-book"></i></h2>
+            <p id="instructionsText"></p>
+            <button class="btn" onclick="startGameAfterInstructions()">Start Game</button>
+        </div>
+    </div>
+
+    <div class="modal" id="codominanceResultModal">
+        <div class="modal-content">
+            <h2 style="color: #7c3aed; margin-bottom: 15px;">⚡ Codominance Result</h2>
+            <p id="codominanceExplanation" style="font-size: 1.1em; margin: 15px 0; color: #333;"></p>
+            <p id="codominanceTrait" style="font-size: 1.3em; font-weight: bold; margin: 20px 0; color: #14b8a6; padding: 15px; background: #f0f9f8; border-radius: 10px;"></p>
+            <div id="codominanceImagesContainer" style="display: flex; gap: 15px; justify-content: center; margin: 20px 0; flex-wrap: wrap;">
+                <div style="text-align: center;">
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 8px;"><strong>Trait 1:</strong></p>
+                    <img id="codominanceImage1" src="" alt="Trait 1" style="max-width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #7c3aed;">
+                </div>
+                <div style="text-align: center; font-size: 1.5em; color: #7c3aed; display: flex; align-items: center;">+</div>
+                <div style="text-align: center;">
+                    <p style="font-size: 0.9em; color: #666; margin-bottom: 8px;"><strong>Trait 2:</strong></p>
+                    <img id="codominanceImage2" src="" alt="Trait 2" style="max-width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #7c3aed;">
+                </div>
+            </div>
+            <p style="font-size: 0.95em; color: #666; margin-top: 15px;"><i>Both alleles are expressed in the phenotype!</i></p>
+            <button class="btn" onclick="document.getElementById('codominanceResultModal').classList.remove('show')" style="margin-top: 15px;">Continue</button>
+        </div>
+    </div>
+
+    <div class="modal" id="matchNotification">
+        <div class="modal-content match-notification-content">
+            <h2 id="matchText"></h2>
+            <img id="matchImage" style="max-width: 300px; max-height: 300px; object-fit: contain; margin-top: 20px;">
+        </div>
+    </div>
+
+    <div class="modal" id="punnettSquareModal">
+        <div class="modal-content match-notification-content">
+            <h2 style="color: #7c3aed; margin-bottom: 10px;">⚡ Punnett Square</h2>
+            <p id="punnettTitle" style="font-size: 1.1em; margin: 10px 0; color: #0ea5e9;"></p>
+            <div style="display: flex; gap: 20px; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+                <div>
+                    <div id="punnettSquare" style="margin: 15px auto;"></div>
+                </div>
+                <div style="background: #f0f9f8; padding: 15px; border-radius: 8px; border-left: 4px solid #14b8a6; font-size: 0.95em;">
+                    <p style="color: #333; font-weight: bold; margin-bottom: 8px;">Enter format:</p>
+                    <p style="color: #666; margin: 5px 0;"><strong>Aa</strong> (capital + lowercase)</p>
+                    <p style="color: #666; margin: 5px 0;"><strong>AA</strong> (both capital)</p>
+                    <p style="color: #666; margin: 5px 0;"><strong>aa</strong> (both lowercase)</p>
+                    <p style="color: #999; font-size: 0.85em; margin-top: 10px; font-style: italic;">Order doesn't matter<br/>Aa = aA</p>
+                </div>
+            </div>
+            <p style="font-size: 0.95em; margin: 15px 0 10px 0; color: #666; text-align: center;">Enter all 4 offspring genotypes:</p>
+            <div id="punnettInputs" style="display: grid; grid-template-columns: 70px 70px; gap: 8px; margin: 10px auto; width: fit-content;"></div>
+            <p id="punnettResult" style="font-size: 1.1em; margin-top: 15px; font-weight: bold; color: #14b8a6;"></p>
+            <button id="submitPunnett" class="btn" style="margin-top: 15px;" onclick="submitPunnettAnswer()">Submit Answer</button>
+        </div>
+    </div>
+
+    <script>
+        // Genetic pairs for easy mode (genotype + phenotype)
+        var geneticPairs = [
+            { genotype: 'BB', phenotype: 'Brown Eyes', display: 'BB\n(Brown Eyes)', phenotypeDisplay: 'Brown Eyes', phenotypeImage: 'https://clipart-library.com/2024/cartoon-brown-eyes/cartoon-brown-eyes-11.jpeg' },
+            { genotype: 'Bb', phenotype: 'Brown Eyes', display: 'Bb\n(Brown Eyes)', phenotypeDisplay: 'Brown Eyes', phenotypeImage: 'https://clipart-library.com/2024/cartoon-brown-eyes/cartoon-brown-eyes-11.jpeg' },
+            { genotype: 'bb', phenotype: 'Blue Eyes', display: 'bb\n(Blue Eyes)', phenotypeDisplay: 'Blue Eyes', phenotypeImage: 'https://clipart-library.com/2023/e6560009f0efa8e573b7332a68f3c387--cartoon-eyes-eye-patches.jpg' },
+            { genotype: 'AA', phenotype: 'Curly Hair', display: 'AA\n(Curly Hair)', phenotypeDisplay: 'Curly Hair', phenotypeImage: 'https://png.pngtree.com/png-vector/20230817/ourmid/pngtree-man-with-a-curly-face-is-a-sticker-clipart-vector-png-image_7011783.png' },
+            { genotype: 'Aa', phenotype: 'Curly Hair', display: 'Aa\n(Curly Hair)', phenotypeDisplay: 'Curly Hair', phenotypeImage: 'https://png.pngtree.com/png-vector/20230817/ourmid/pngtree-man-with-a-curly-face-is-a-sticker-clipart-vector-png-image_7011783.png' },
+            { genotype: 'aa', phenotype: 'Straight Hair', display: 'aa\n(Straight Hair)', phenotypeDisplay: 'Straight Hair', phenotypeImage: 'https://img.pikbest.com/png-images/qiantu/shawl-long-hair-blue-cheongsam-cartoon-girl-element_2541975.png!sw800' },
+            { genotype: 'RR', phenotype: 'Red Flowers', display: 'RR\n(Red Flowers)', phenotypeDisplay: 'Red Flowers', phenotypeImage: 'https://hips.hearstapps.com/hmg-prod/images/15848387-9508-4660-ac5b-18013e8532c3.jpeg?crop=0.667xw:1xh;0.167xw,0xh&resize=1120:*' },
+            { genotype: 'Rr', phenotype: 'Red Flowers', display: 'Rr\n(Red Flowers)', phenotypeDisplay: 'Red Flowers', phenotypeImage: 'https://hips.hearstapps.com/hmg-prod/images/15848387-9508-4660-ac5b-18013e8532c3.jpeg?crop=0.667xw:1xh;0.167xw,0xh&resize=1120:*' }
+        ];
+
+        // Image URLs from Unsplash - cute animals and nature (for hard mode)
+        var images = [
+            'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=400',
+            'https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=400',
+            'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=400',
+            'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400',
+            'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?w=400',
+            'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400',
+            'https://images.unsplash.com/photo-1560807707-8cc77767d783?w=400',
+            'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400'
+        ];
+
+        // Hard mode genetic pairs with twist cards (10 pairs, but only need 7 matches to win)
+        var hardModeGenotypes = [
+            { genotype: 'BB', phenotype: 'Brown Eyes', display: 'BB\n(Eyes)', category: 'Eyes', phenotypeImage: 'https://clipart-library.com/2024/cartoon-brown-eyes/cartoon-brown-eyes-11.jpeg' },
+            { genotype: 'Bb', phenotype: 'Brown Eyes', display: 'Bb\n(Eyes)', category: 'Eyes', phenotypeImage: 'https://clipart-library.com/2024/cartoon-brown-eyes/cartoon-brown-eyes-11.jpeg' },
+            { genotype: 'bb', phenotype: 'Blue Eyes', display: 'bb\n(Eyes)', category: 'Eyes', phenotypeImage: 'https://clipart-library.com/2023/e6560009f0efa8e573b7332a68f3c387--cartoon-eyes-eye-patches.jpg' },
+            { genotype: 'AA', phenotype: 'Curly Hair', display: 'AA\n(Hair)', category: 'Hair', phenotypeImage: 'https://png.pngtree.com/png-vector/20230817/ourmid/pngtree-man-with-a-curly-face-is-a-sticker-clipart-vector-png-image_7011783.png' },
+            { genotype: 'Aa', phenotype: 'Curly Hair', display: 'Aa\n(Hair)', category: 'Hair', phenotypeImage: 'https://png.pngtree.com/png-vector/20230817/ourmid/pngtree-man-with-a-curly-face-is-a-sticker-clipart-vector-png-image_7011783.png' },
+            { genotype: 'aa', phenotype: 'Straight Hair', display: 'aa\n(Hair)', category: 'Hair', phenotypeImage: 'https://img.pikbest.com/png-images/qiantu/shawl-long-hair-blue-cheongsam-cartoon-girl-element_2541975.png!sw800' },
+            { genotype: 'RR', phenotype: 'Red Flowers', display: 'RR\n(Flower)', category: 'Flower', phenotypeImage: 'https://hips.hearstapps.com/hmg-prod/images/15848387-9508-4660-ac5b-18013e8532c3.jpeg?crop=0.667xw:1xh;0.167xw,0xh&resize=1120:*' },
+            { genotype: 'Rr', phenotype: 'Red Flowers', display: 'Rr\n(Flower)', category: 'Flower', phenotypeImage: 'https://hips.hearstapps.com/hmg-prod/images/15848387-9508-4660-ac5b-18013e8532c3.jpeg?crop=0.667xw:1xh;0.167xw,0xh&resize=1120:*' },
+            { genotype: 'WW', phenotype: 'White Flowers', display: 'WW\n(Flower)', category: 'Flower', phenotypeImage: 'https://hips.hearstapps.com/hmg-prod/images/white-flowers-681b3e8a45b05.jpg?crop=0.633xw:0.985xh;0.0558xw,0&resize=640:*' },
+            { genotype: 'Ww', phenotype: 'White Flowers', display: 'Ww\n(Flower)', category: 'Flower', phenotypeImage: 'https://hips.hearstapps.com/hmg-prod/images/white-flowers-681b3e8a45b05.jpg?crop=0.633xw:0.985xh;0.0558xw,0&resize=640:*' }
+        ];
+
+        // Twist cards for hard mode - each has a genotype for Punnett square
+        var twistCards = [
+            { id: 'epistasis1', type: 'epistasis', genotype: 'BB', display: '🚫 Epistasis', description: 'Blocks genotype' },
+            { id: 'epistasis2', type: 'epistasis', genotype: 'AA', display: '🚫 Epistasis', description: 'Blocks genotype' },
+            { id: 'codominance1', type: 'codominance', genotype: null, display: '⚡ Codominance', description: 'Shows both traits' },
+            { id: 'codominance2', type: 'codominance', genotype: null, display: '⚡ Codominance', description: 'Shows both traits' },
+            { id: 'codominance3', type: 'codominance', genotype: null, display: '⚡ Codominance', description: 'Shows both traits' }
+        ];
+
+        // Function to get a random genotype for codominance cards
+        function getRandomGenotype() {
+            var allGenotypes = [];
+            // Get all possible genotypes from hardModeGenotypes
+            hardModeGenotypes.forEach(function(pair) {
+                allGenotypes.push(pair.genotype);
+            });
+            return allGenotypes[Math.floor(Math.random() * allGenotypes.length)];
+        }
+
+        var firstCard = null;
+        var secondCard = null;
+        var canFlip = true;
+        var matches = 0;
+        var hearts = 5;
+        var difficulty = 'easy';
+        var matchedPhenotype = '';
+
+        // Start the game
+        function startGame() {
+            var gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            // Add hard-mode class if difficulty is hard
+            if (difficulty === 'hard') {
+                gameBoard.classList.add('hard-mode');
+            } else {
+                gameBoard.classList.remove('hard-mode');
+            }
+            
+            // Set hearts based on difficulty
+            hearts = (difficulty === 'easy') ? 10 : 10;
+            
+            if (difficulty === 'easy') {
+                // Create genetic cards
+                var allCards = [];
+                
+                // Add all genotype cards
+                geneticPairs.forEach(function(pair) {
+                    allCards.push({ type: 'genotype', content: pair.display, pair: pair, isImage: false });
+                });
+                
+                // Add phenotype cards - one for each genotype (so genotypes can match with phenotypes)
+                geneticPairs.forEach(function(pair) {
+                    allCards.push({ type: 'phenotype', content: pair.phenotypeDisplay, imageUrl: pair.phenotypeImage, pair: pair, isImage: true });
+                });
+                
+                // Shuffle cards
+                allCards.sort(function() {
+                    return Math.random() - 0.5;
+                });
+                
+                // Create card elements
+                for (var i = 0; i < allCards.length; i++) {
+                    var card = document.createElement('div');
+                    card.className = 'card';
+                    var isFlowerCard = allCards[i].pair.phenotype === 'Red Flowers';
+                    if (allCards[i].isImage) {
+                        card.innerHTML = '<div class="card-front"><i class="fas fa-heart"></i></div>' +
+                                        '<div class="card-back genetic-card ' + (isFlowerCard ? 'flower-card' : 'eye-card') + '"><img src="' + allCards[i].imageUrl + '"></div>';
+                    } else {
+                        card.innerHTML = '<div class="card-front"><i class="fas fa-heart"></i></div>' +
+                                        '<div class="card-back genetic-card"><div class="genetic-content">' + allCards[i].content.replace(/\n/g, '<br>') + '</div></div>';
+                    }
+                    card.onclick = flipCard;
+                    card.dataset.type = allCards[i].type;
+                    card.dataset.pairId = allCards[i].pair.phenotype;
+                    card.dataset.phenotypeName = allCards[i].pair.phenotype;
+                    card.dataset.imageUrl = allCards[i].isImage ? allCards[i].imageUrl : '';
+                    gameBoard.appendChild(card);
+                }
+            } else {
+                // Hard mode - Genotypes + Phenotypes + Twist Cards (5x5 = 25 cards)
+                var allCards = [];
+                
+                // Add all genotype cards (10 cards - one of each)
+                hardModeGenotypes.forEach(function(pair) {
+                    allCards.push({ type: 'genotype', content: pair.display, pair: pair, isImage: false });
+                });
+                
+                // Add all phenotype cards (10 cards - one of each matching)
+                hardModeGenotypes.forEach(function(pair) {
+                    allCards.push({ type: 'phenotype', content: pair.phenotype, imageUrl: pair.phenotypeImage, pair: pair, isImage: true });
+                });
+                
+                // Add twist cards (5 cards)
+                twistCards.forEach(function(twist) {
+                    // Assign random genotype to codominance cards
+                    if (twist.type === 'codominance' && twist.genotype === null) {
+                        twist.genotype = getRandomGenotype();
+                    }
+                    allCards.push({ type: 'twist', content: twist.display, twist: twist, isImage: false });
+                });
+                
+                // Shuffle cards
+                allCards.sort(function() {
+                    return Math.random() - 0.5;
+                });
+                
+                // Create card elements
+                for (var i = 0; i < allCards.length; i++) {
+                    var card = document.createElement('div');
+                    card.className = 'card';
+                    
+                    if (allCards[i].type === 'twist') {
+                        var twistColor = allCards[i].twist.type === 'epistasis' ? '#e11d48' : '#7c3aed';
+                        var textColor = allCards[i].twist.type === 'epistasis' ? 'white' : '#FFD700';
+                        card.innerHTML = '<div class="card-front"><i class="fas fa-heart"></i></div>' +
+                                        '<div class="card-back genetic-card" style="background: ' + twistColor + '; color: ' + textColor + ';"><div class="genetic-content">' + allCards[i].content + '</div></div>';
+                        card.dataset.type = 'twist';
+                        card.dataset.twistType = allCards[i].twist.type;
+                        card.dataset.twistId = allCards[i].twist.id;
+                        card.dataset.genotypeValue = allCards[i].twist.genotype;
+                    } else if (allCards[i].isImage) {
+                        var isFlowerCard = allCards[i].pair.phenotype === 'Red Flowers' || allCards[i].pair.phenotype === 'White Flowers';
+                        var cardClass = isFlowerCard ? 'flower-card' : 'eye-card';
+                        card.innerHTML = '<div class="card-front"><i class="fas fa-heart"></i></div>' +
+                                        '<div class="card-back genetic-card ' + cardClass + '"><img src="' + allCards[i].imageUrl + '"></div>';
+                        card.dataset.type = allCards[i].type;
+                        card.dataset.genotypeValue = allCards[i].pair.genotype;
+                        card.dataset.phenotypeName = allCards[i].pair.phenotype;
+                        card.dataset.pairId = allCards[i].pair.phenotype;
+                        card.dataset.imageUrl = allCards[i].imageUrl;
+                        card.dataset.category = allCards[i].pair.category;
+                    } else {
+                        card.innerHTML = '<div class="card-front"><i class="fas fa-heart"></i></div>' +
+                                        '<div class="card-back genetic-card"><div class="genetic-content">' + allCards[i].content.replace(/\n/g, '<br>') + '</div></div>';
+                        card.dataset.type = allCards[i].type;
+                        card.dataset.genotypeValue = allCards[i].pair.genotype;
+                        card.dataset.phenotypeName = allCards[i].pair.phenotype;
+                        card.dataset.pairId = allCards[i].pair.phenotype;
+                        card.dataset.category = allCards[i].pair.category;
+                    }
+                    
+                    card.onclick = flipCard;
+                    gameBoard.appendChild(card);
+                }
+            }
+            
+            // Reset variables
+            firstCard = null;
+            secondCard = null;
+            canFlip = true;
+            matches = 0;
+            
+            updateStats();
+        }
+
+        function flipCard() {
+            if (!canFlip) return;
+            if (this.classList.contains('flipped')) return;
+            if (this.classList.contains('matched')) return;
+            
+            // Prevent clicking the same card twice
+            if (firstCard === this) return;
+            
+            this.classList.add('flipped');
+            
+            if (firstCard == null) {
+                firstCard = this;
+            } else {
+                secondCard = this;
+                canFlip = false;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            var match = false;
+            var phenotypeName = '';
+            var imageUrl = '';
+            var matchType = 'normal'; // normal, epistasis, codominance, twist_pair
+            
+            if (difficulty === 'easy') {
+                // For genetic mode: cards must have different types but same pair
+                var firstIsGenotype = firstCard.dataset.type === 'genotype';
+                var secondIsGenotype = secondCard.dataset.type === 'genotype';
+                
+                // They must be different types (one genotype, one phenotype) AND same pair
+                if (firstIsGenotype !== secondIsGenotype && firstCard.dataset.pairId === secondCard.dataset.pairId) {
+                    match = true;
+                    // Get phenotype info from whichever card is the phenotype
+                    var phenotypeCard = secondIsGenotype ? firstCard : secondCard;
+                    phenotypeName = phenotypeCard.dataset.phenotypeName;
+                }
+            } else {
+                // Hard mode with twist cards
+                var firstType = firstCard.dataset.type;
+                var secondType = secondCard.dataset.type;
+                
+                // Case 1: Genotype + Phenotype (normal match)
+                if ((firstType === 'genotype' && secondType === 'phenotype') ||
+                    (firstType === 'phenotype' && secondType === 'genotype')) {
+                    if (firstCard.dataset.pairId === secondCard.dataset.pairId) {
+                        match = true;
+                        matchType = 'normal';
+                        phenotypeName = firstCard.dataset.phenotypeName;
+                        // Get image URL from phenotype card
+                        var phenotypeCard = secondType === 'phenotype' ? secondCard : firstCard;
+                        imageUrl = phenotypeCard.dataset.imageUrl;
+                    }
+                }
+                // Case 2: Genotype + Epistasis Twist (blocked, discard both)
+                else if ((firstType === 'genotype' && secondType === 'twist' && secondCard.dataset.twistType === 'epistasis') ||
+                         (firstType === 'twist' && secondType === 'genotype' && firstCard.dataset.twistType === 'epistasis')) {
+                    match = true;
+                    matchType = 'epistasis';
+                }
+                // Case 3: Genotype + Codominance Twist (shows both traits - solves punnett square with both genotypes)
+                else if ((firstType === 'genotype' && secondType === 'twist' && secondCard.dataset.twistType === 'codominance') ||
+                         (firstType === 'twist' && secondType === 'genotype' && firstCard.dataset.twistType === 'codominance')) {
+                    match = true;
+                    matchType = 'codominance';
+                    phenotypeName = 'Codominance!';
+                }
+                // Case 4: Twist + Twist (both discarded, no points)
+                else if (firstType === 'twist' && secondType === 'twist') {
+                    match = true;
+                    matchType = 'twist_pair';
+                }
+            }
+            
+            if (match) {
+                setTimeout(function() {
+                    firstCard.classList.add('matched');
+                    secondCard.classList.add('matched');
+                    
+                    // Only count as match if it's a normal match or codominance
+                    if (matchType === 'normal' || matchType === 'codominance') {
+                        matches++;
+                    }
+                    
+                    updateStats();
+                    
+                    // Show notifications based on match type BEFORE resetting cards
+                    if (difficulty === 'easy') {
+                        // Get image URL from phenotype card for easy mode too
+                        var phenotypeCard = firstCard.dataset.type === 'phenotype' ? firstCard : secondCard;
+                        var easyImageUrl = phenotypeCard.dataset.imageUrl || '';
+                        showMatchNotification(phenotypeName, easyImageUrl);
+                    } else if (difficulty === 'hard') {
+                        if (matchType === 'normal') {
+                            showMatchNotification(phenotypeName, imageUrl);
+                        } else if (matchType === 'codominance') {
+                            console.log('Calling showPunnettSquare with cards:', firstCard, secondCard);
+                            showPunnettSquare(firstCard, secondCard);
+                        } else if (matchType === 'epistasis') {
+                            hearts -= 2;  // Lose 2 hearts for epistasis
+                            showMatchNotification('Epistasis Blocked & Discarded! -2 Hearts', '');
+                        } else if (matchType === 'twist_pair') {
+                            showMatchNotification('Twist Cards Discarded!', '');
+                        }
+                    }
+                    
+                    // Reset cards after notification
+                    resetCards();
+                    
+                    var targetMatches = difficulty === 'easy' ? 8 : 7;
+                    if (matches == targetMatches) {
+                        setTimeout(function() {
+                            winGame();
+                        }, 1500);
+                    }
+                }, 500);
+            } else {
+                setTimeout(function() {
+                    firstCard.classList.remove('flipped');
+                    secondCard.classList.remove('flipped');
+                    resetCards();
+                    hearts--;
+                    updateStats();
+                    
+                    if (hearts <= 0) {
+                        loseGame();
+                    }
+                }, 1000);
+            }
+        }
+
+        var punnettOffspring = []; // Store correct offspring combinations
+        var punnettGenotypes = {}; // Store the two parent genotypes for validation
+        var punnettAttempts = 0; // Track attempts for Punnett square puzzle
+
+        function showPunnettSquare(card1, card2) {
+            // Find the two genotypes - one from genotype card and one from codominance card
+            var genotype1 = card1.dataset.genotypeValue;
+            var genotype2 = card2.dataset.genotypeValue;
+            
+            console.log('showPunnettSquare called');
+            console.log('Card1 type:', card1.dataset.type, 'Genotype:', genotype1);
+            console.log('Card2 type:', card2.dataset.type, 'Genotype:', genotype2);
+            
+            // Ensure both genotypes are defined
+            if (!genotype1 || !genotype2) {
+                console.error('Missing genotype values!', 'G1:', genotype1, 'G2:', genotype2);
+                return;
+            }
+            
+            // Parse both genotypes
+            var g1_allele1 = genotype1.charAt(0);
+            var g1_allele2 = genotype1.charAt(1);
+            var g2_allele1 = genotype2.charAt(0);
+            var g2_allele2 = genotype2.charAt(1);
+            
+            console.log('Alleles - G1:', g1_allele1, g1_allele2, 'G2:', g2_allele1, g2_allele2);
+            
+            // Show Punnett square with cross of both genotypes
+            var modalContent = document.getElementById('punnettSquareModal');
+            if (!modalContent) {
+                console.error('Punnett square modal not found!');
+                return;
+            }
+            
+            document.getElementById('punnettTitle').textContent = 'Cross: ' + genotype1 + ' × ' + genotype2;
+            
+            // Calculate all offspring genotypes
+            punnettOffspring = [
+                g1_allele1 + g2_allele1,  // Top-left cell
+                g1_allele1 + g2_allele2,  // Top-right cell
+                g1_allele2 + g2_allele1,  // Bottom-left cell
+                g1_allele2 + g2_allele2   // Bottom-right cell
+            ];
+            
+            // Store for validation
+            punnettGenotypes = {
+                g1: genotype1,
+                g2: genotype2,
+                offspring: punnettOffspring
+            };
+            
+            console.log('Offspring possibilities:', punnettOffspring);
+            
+            // Create Punnett square grid (2x2 cross) - non-interactive display
+            var squareHtml = '<div style="display: grid; grid-template-columns: 70px 70px 70px; gap: 8px; margin: 10px auto; width: fit-content; font-weight: bold; font-size: 1.1em; text-align: center;">';
+            
+            // Header row (blank, g2 allele 1, g2 allele 2)
+            squareHtml += '<div style="border: 2px solid #333; background: #f0f0f0; padding: 8px;"></div>';
+            squareHtml += '<div style="border: 2px solid #333; background: #f0f0f0; padding: 8px;">' + g2_allele1 + '</div>';
+            squareHtml += '<div style="border: 2px solid #333; background: #f0f0f0; padding: 8px;">' + g2_allele2 + '</div>';
+            
+            // Row 1 (g1 allele 1)
+            squareHtml += '<div style="border: 2px solid #333; background: #f0f0f0; padding: 8px;">' + g1_allele1 + '</div>';
+            squareHtml += '<div style="border: 2px solid #e0f2fe; padding: 8px; background: #e0f2fe;">?</div>';
+            squareHtml += '<div style="border: 2px solid #f0e7fe; padding: 8px; background: #f0e7fe;">?</div>';
+            
+            // Row 2 (g1 allele 2)
+            squareHtml += '<div style="border: 2px solid #333; background: #f0f0f0; padding: 8px;">' + g1_allele2 + '</div>';
+            squareHtml += '<div style="border: 2px solid #f0e7fe; padding: 8px; background: #f0e7fe;">?</div>';
+            squareHtml += '<div style="border: 2px solid #fce7f3; padding: 8px; background: #fce7f3;">?</div>';
+            
+            squareHtml += '</div>';
+            
+            document.getElementById('punnettSquare').innerHTML = squareHtml;
+            
+            // Create input fields for all 4 offspring
+            var inputsHtml = '';
+            for (var i = 0; i < 4; i++) {
+                inputsHtml += '<input type="text" class="punnettInput" maxlength="2" placeholder="' + (i+1) + '" style="padding: 8px; font-size: 1em; text-align: center; border: 2px solid #7c3aed; border-radius: 8px;">';
+            }
+            document.getElementById('punnettInputs').innerHTML = inputsHtml;
+            
+            document.getElementById('punnettResult').textContent = '';
+            
+            console.log('Adding show class to modal');
+            modalContent.classList.add('show');
+            
+            // Focus on input field
+            setTimeout(function() {
+                document.getElementById('punnettAnswer').focus();
+            }, 100);
+        }
+
+        function submitPunnettAnswer() {
+            var resultText = document.getElementById('punnettResult');
+            var inputs = document.querySelectorAll('.punnettInput');
+            var userAnswers = [];
+            
+            // Get all 4 answers
+            for (var i = 0; i < 4; i++) {
+                userAnswers.push(inputs[i].value);  // Keep original case
+            }
+            
+            console.log('User answers:', userAnswers);
+            console.log('Valid offspring:', punnettGenotypes.offspring);
+            
+            // Check if all fields are filled
+            if (userAnswers.some(function(answer) { return answer === ''; })) {
+                resultText.textContent = '✗ Please fill in all 4 boxes!';
+                resultText.style.color = '#e11d48';
+                return;
+            }
+            
+            // Get valid offspring (keep case)
+            var validOffspring = punnettGenotypes.offspring;
+            
+            console.log('Valid offspring:', validOffspring);
+            
+            // Function to normalize genotype order while preserving case
+            // e.g., both 'Aa' and 'aA' should match, but 'WA' is invalid
+            function normalizeOrder(g) {
+                if (g.length === 2) {
+                    var alleles = [g.charAt(0), g.charAt(1)];
+                    // Sort by whether it's uppercase or lowercase, then alphabetically
+                    alleles.sort(function(a, b) {
+                        var aUpper = a === a.toUpperCase() ? 0 : 1;
+                        var bUpper = b === b.toUpperCase() ? 0 : 1;
+                        if (aUpper !== bUpper) return aUpper - bUpper;
+                        return a.localeCompare(b);
+                    });
+                    return alleles.join('');
+                }
+                return g;
+            }
+            
+            // Normalize valid offspring and sort
+            var normalizedValid = validOffspring.map(normalizeOrder).sort();
+            // Normalize user answers and sort
+            var normalizedUser = userAnswers.map(normalizeOrder).sort();
+            
+            console.log('Normalized valid:', normalizedValid);
+            console.log('Normalized user:', normalizedUser);
+            
+            // Check if arrays match
+            var isCorrect = true;
+            if (normalizedValid.length === normalizedUser.length) {
+                for (var i = 0; i < normalizedValid.length; i++) {
+                    if (normalizedValid[i] !== normalizedUser[i]) {
+                        isCorrect = false;
+                        console.log('Mismatch at index ' + i + ': "' + normalizedValid[i] + '" vs "' + normalizedUser[i] + '"');
+                        break;
+                    }
+                }
+            } else {
+                isCorrect = false;
+            }
+            
+            console.log('Is correct:', isCorrect);
+            
+            if (isCorrect) {
+                resultText.textContent = '✓ Correct! All offspring genotypes!';
+                resultText.style.color = '#14b8a6';
+                
+                // Gain a heart for correct codominance answer
+                hearts++;
+                updateStats();
+                
+                // Show codominance result with phenotype
+                setTimeout(function() {
+                    var punnettModal = document.getElementById('punnettSquareModal');
+                    punnettModal.classList.remove('show');
+                    
+                    // Display the codominance phenotype result
+                    var codominanceModal = document.getElementById('codominanceResultModal');
+                    var g1 = punnettGenotypes.g1;
+                    var g2 = punnettGenotypes.g2;
+                    var explanationText = document.getElementById('codominanceExplanation');
+                    var traitText = document.getElementById('codominanceTrait');
+                    
+                    // Get phenotypes from the genotypes
+                    var g1Phenotype = '';
+                    var g2Phenotype = '';
+                    var g1Image = '';
+                    var g2Image = '';
+                    var geneType = '';
+                    
+                    // Determine what traits these are from (Eyes, Hair, Flower)
+                    hardModeGenotypes.forEach(function(pair) {
+                        if (pair.genotype.toUpperCase() === g1.toUpperCase() || 
+                            pair.genotype.charAt(0) === g1.charAt(0).toUpperCase()) {
+                            g1Phenotype = pair.phenotype;
+                            g1Image = pair.phenotypeImage;
+                            geneType = pair.category;
+                        }
+                        if (pair.genotype.toUpperCase() === g2.toUpperCase() || 
+                            pair.genotype.charAt(0) === g2.charAt(0).toUpperCase()) {
+                            g2Phenotype = pair.phenotype;
+                            g2Image = pair.phenotypeImage;
+                            geneType = pair.category;
+                        }
+                    });
+                    
+                    // Set images if they exist
+                    if (g1Image) document.getElementById('codominanceImage1').src = g1Image;
+                    if (g2Image) document.getElementById('codominanceImage2').src = g2Image;
+                    
+                    explanationText.textContent = 'You crossed ' + g1.toUpperCase() + ' × ' + g2.toUpperCase() + ' and discovered codominance!';
+                    traitText.textContent = g1Phenotype + ' + ' + g2Phenotype + ' = Both Traits Expressed! 🎨';
+                    
+                    codominanceModal.classList.add('show');
+                    punnettAttempts = 0;  // Reset attempts
+                }, 1500);
+            } else {
+                punnettAttempts++;
+                if (punnettAttempts >= 3) {
+                    resultText.textContent = '✗ Out of attempts! Lose 3 hearts!';
+                    resultText.style.color = '#e11d48';
+                    hearts -= 3;  // Lose 3 hearts if they fail 3 times
+                    updateStats();
+                    
+                    // Close modal and keep cards matched
+                    setTimeout(function() {
+                        var modalContent = document.getElementById('punnettSquareModal');
+                        modalContent.classList.remove('show');
+                        punnettAttempts = 0;  // Reset attempts
+                        
+                        if (hearts <= 0) {
+                            loseGame();
+                        }
+                    }, 1500);
+                } else {
+                    resultText.textContent = '✗ Incorrect. Try again! (' + (3 - punnettAttempts) + ' attempts left)';
+                    resultText.style.color = '#e11d48';
+                    // Clear inputs for retry
+                    inputs.forEach(function(input) { input.value = ''; });
+                }
+            }
+        }
+
+        function showMatchNotification(traitName, imageUrl) {
+            console.log('Showing notification for:', traitName, 'with image:', imageUrl);
+            
+            var matchModal = document.getElementById('matchNotification');
+            document.getElementById('matchText').innerHTML = '✓ ' + traitName;
+            var matchImage = document.getElementById('matchImage');
+            
+            if (imageUrl) {
+                matchImage.src = imageUrl;
+                matchImage.style.display = 'block';
+            } else {
+                matchImage.style.display = 'none';
+            }
+            
+            matchModal.classList.add('show');
+            
+            setTimeout(function() {
+                matchModal.classList.remove('show');
+            }, 1500);
+        }
+
+        function resetCards() {
+            firstCard = null;
+            secondCard = null;
+            canFlip = true;
+        }
+
+        function updateStats() {
+            document.getElementById('hearts').innerHTML = '<i class="fas fa-heart"></i> ' + hearts;
+            var totalMatches = difficulty === 'easy' ? 8 : 7;
+            document.getElementById('matches').textContent = matches + '/' + totalMatches;
+        }
+
+        function winGame() {
+            console.log('Win game called!');
+            document.getElementById('finalHearts').textContent = hearts;
+            var winModal = document.getElementById('winModal');
+            var winMessage = document.getElementById('winMessage');
+            
+            // Set different messages based on difficulty and hearts remaining
+            if (difficulty === 'easy') {
+                if (hearts >= 10) {
+                    winMessage.textContent = 'Perfect Game! You didn\'t lose any hearts! 🌟';
+                } else if (hearts >= 5) {
+                    winMessage.textContent = 'Great Job! You mastered the genetic traits! 👏';
+                } else {
+                    winMessage.textContent = 'You Won! Learn more genetics for better results! 📚';
+                }
+            } else {
+                if (hearts >= 10) {
+                    winMessage.textContent = 'Incredible! You\'re a genetics master! 🧬✨';
+                } else if (hearts >= 5) {
+                    winMessage.textContent = 'Excellent! You conquered hard mode! 🚀';
+                } else {
+                    winMessage.textContent = 'You Survived! Hard mode is challenging! 💪';
+                }
+            }
+            
+            console.log('Win modal:', winModal);
+            if (winModal) {
+                winModal.classList.add('show');
+            } else {
+                console.error('Win modal not found!');
+            }
+        }
+
+        function loseGame() {
+            document.getElementById('loseModal').classList.add('show');
+        }
+
+        function newGame() {
+            document.getElementById('winModal').classList.remove('show');
+            document.getElementById('loseModal').classList.remove('show');
+            showMenu();
+        }
+
+        function selectDifficulty(level) {
+            difficulty = level;
+            document.getElementById('menuScreen').classList.add('hidden');
+            
+            if (difficulty === 'easy') {
+                // Show instructions for easy mode
+                document.getElementById('instructionsText').innerHTML = '<div style="background: #f0f9f8; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #14b8a6;"><strong style="color: #14b8a6;">What is Genotype & Phenotype?</strong><br><small style="color: #0f766e;">Genotype = The genetic code (BB, Bb, bb) | Phenotype = How it looks (Brown Eyes, Blue Eyes)</small></div>' +
+                    '<strong style="color: #0ea5e9; font-size: 1.1em;">Match the Genotype to its Phenotype:</strong><br><br>' +
+                    '<span style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 10px 15px; border-radius: 8px; display: inline-block; margin: 8px; border-left: 4px solid #1976d2;"><strong style="color: #1565c0;">BB or Bb</strong> → <strong style="color: #1565c0;">Brown Eyes 👁️</strong></span><br>' +
+                    '<span style="background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); padding: 10px 15px; border-radius: 8px; display: inline-block; margin: 8px; border-left: 4px solid #0288d1;"><strong style="color: #01579b;">bb</strong> → <strong style="color: #01579b;">Blue Eyes 👁️</strong></span><br>' +
+                    '<span style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 10px 15px; border-radius: 8px; display: inline-block; margin: 8px; border-left: 4px solid #f57c00;"><strong style="color: #e65100;">AA or Aa</strong> → <strong style="color: #e65100;">Curly Hair 🌀</strong></span><br>' +
+                    '<span style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 10px 15px; border-radius: 8px; display: inline-block; margin: 8px; border-left: 4px solid #7b1fa2;"><strong style="color: #4a148c;">aa</strong> → <strong style="color: #4a148c;">Straight Hair ➡️</strong></span><br><br>' +
+                    '<strong style="color: #14b8a6; font-size: 1em;">Find all 8 matches before running out of hearts!</strong>';
+                document.getElementById('instructionsModal').classList.add('show');
+            } else {
+                // Show instructions for hard mode
+                document.getElementById('instructionsText').innerHTML = '<strong>Hard Mode Rules:</strong><br><br>' +
+                    '<div style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #4caf50;">' +
+                    '<strong style="color: #2e7d32;">✓ Genotype + Phenotype</strong><br>' +
+                    'Match for points' +
+                    '</div>' +
+                    '<div style="background: #ffebee; padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #c62828;">' +
+                    '<strong style="color: #c62828;">🚫 Genotype + Epistasis</strong><br>' +
+                    'Match is blocked, no points, lose 2 hearts' +
+                    '</div>' +
+                    '<div style="background: #f3e5f5; padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #7c3aed;">' +
+                    '<strong style="color: #7c3aed;">⚡ Genotype + Codominance</strong><br>' +
+                    'Solve Punnett Square to show both traits, gain 1 heart' +
+                    '</div>' +
+                    '<div style="background: #fff3e0; padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #f57c00;">' +
+                    '<strong style="color: #f57c00;">💳 Twist + Twist</strong><br>' +
+                    'Both discarded, no points, no hearts lost' +
+                    '</div><br>' +
+                    '<strong style="color: #0ea5e9;">Find all 7 matches to win!</strong>';
+                document.getElementById('instructionsModal').classList.add('show');
+            }
+        }
+
+        function startGameAfterInstructions() {
+            document.getElementById('instructionsModal').classList.remove('show');
+            startGame();
+        }
+
+        function showMenu() {
+            document.getElementById('menuScreen').classList.remove('hidden');
+        }
+
+        // Start with menu
+        showMenu();
+    </script>
+</body>
+</html>
